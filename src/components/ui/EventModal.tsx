@@ -14,13 +14,13 @@ const EventModal: React.FC<EventModalProps> = ({
   onClose,
   onSave,
   eventToEdit,
-  onDelete,
 }) => {
   const [eventName, setEventName] = useState<string>("");
   const [startTime, setStartTime] = useState<string>("");
   const [endTime, setEndTime] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [category, setCategory] = useState<'work' | 'personal' | 'others'>('work'); // Default category
+  const [error, setError] = useState<string | null>(null); // Error state for validation
 
   // Pre-fill the form if editing an event
   useEffect(() => {
@@ -34,67 +34,49 @@ const EventModal: React.FC<EventModalProps> = ({
   }, [eventToEdit]);
 
   const handleSave = () => {
-    if (eventName && startTime && endTime) {
-      const eventData: Event = {
-        eventName,
-        startTime,
-        endTime,
-        description,
-        category,
-        date: selectedDate,
-        id: eventToEdit ? eventToEdit.id : Date.now(), // Use existing id or generate a new one
-      };
-      onSave(eventData, eventToEdit?.id); // Pass id for editing
-      onClose();
+    if (!eventName || !startTime || !endTime) {
+      setError("Event Name, Start Time, and End Time are required.");
+      return;
     }
-  };
 
-  const handleDelete = () => {
-    if (eventToEdit && !Array.isArray(eventToEdit)) {
-      onDelete(eventToEdit.id); // Call onDelete for event deletion
-      onClose();
+    // Validate that the start time is earlier than the end time
+    if (startTime >= endTime) {
+      setError("Start time must be earlier than end time.");
+      return;
     }
+
+    const eventData: Event = {
+      eventName,
+      startTime,
+      endTime,
+      description,
+      category,
+      date: selectedDate,
+      id: eventToEdit ? eventToEdit.id : Date.now(), // Use existing id or generate a new one
+    };
+
+    onSave(eventData, eventToEdit?.id); // Pass id for editing
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-gray-700 bg-opacity-50 flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
         <h2 className="text-2xl font-semibold mb-4">
-          {Array.isArray(eventToEdit) ? "Events on this day" : eventToEdit ? "Edit Event" : "Add Event"}
+          {eventToEdit ? "Edit Event" : "Add Event"}
         </h2>
 
-        {Array.isArray(eventToEdit) ? (
-          <div className="mb-4">
-            {eventToEdit.map((event) => (
-              <div key={event.id} className="border-b pb-2 mb-2">
-                <h3 className="font-semibold">{event.eventName}</h3>
-                <p>{format(event.date, "hh:mm a")} - {event.endTime}</p>
-                <p>{event.description}</p>
-                <div className="flex justify-between mt-2">
-                  <button
-                    onClick={() => onSave(event)} // Edit event
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => onDelete(event.id)} // Delete event
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
+        
           <div>
             {/* Edit or create event form */}
+            {error && <p className="text-red-500 mb-4">{error}</p>} {/* Error message */}
+
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="eventName" className="block text-sm font-medium text-gray-700">
                 Event Name
               </label>
               <input
+                id="eventName"
                 type="text"
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
@@ -103,10 +85,11 @@ const EventModal: React.FC<EventModalProps> = ({
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
                 Start Time
               </label>
               <input
+                id="startTime"
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
@@ -114,10 +97,11 @@ const EventModal: React.FC<EventModalProps> = ({
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
                 End Time
               </label>
               <input
+                id="endTime"
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
@@ -125,10 +109,11 @@ const EventModal: React.FC<EventModalProps> = ({
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
                 Description (Optional)
               </label>
               <textarea
+                id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="mt-1 p-2 w-full border border-gray-300 rounded-md"
@@ -136,10 +121,11 @@ const EventModal: React.FC<EventModalProps> = ({
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
                 Category
               </label>
               <select
+                id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as 'work' | 'personal' | 'others')}
                 className="mt-1 p-2 w-full border border-gray-300 rounded-md"
@@ -164,7 +150,6 @@ const EventModal: React.FC<EventModalProps> = ({
               </button>
             </div>
           </div>
-        )}
       </div>
     </div>
   );
